@@ -32,7 +32,7 @@ export class AuthService {
   public Logout(): void {
     localStorage.removeItem('id_token');
     localStorage.removeItem('profile');
-    this.router.navigate(["/"]).then(result => { window.location.href = 'https://fs.landmark.co.uk/adfs/ls?wa=wsignout1.0'; });
+    this.router.navigate(["/"]).then(result => { window.location.href = '-LOGOOUT-URL-HERE-/adfs/ls?wa=wsignout1.0'; });
   }
 
   public Login(): void {
