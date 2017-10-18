@@ -37,8 +37,8 @@ export class AuthService {
 
   public Login(): void {
     // Retrieve Information needed for logon
-    var landmarkPayload = this.auth0.parseHash(window.location.hash);
-    var isRedirectFromLandmarkADFS = landmarkPayload && landmarkPayload.idToken && landmarkPayload.idTokenPayload;
+    var payload = this.auth0.parseHash(window.location.hash);
+    var isRedirectFromADFS = payload && payload.idToken && payload.idTokenPayload;
     var userDetails = localStorage.getItem("profile");
     if (userDetails) {
       this.currentUser.User = JSON.parse(userDetails);
@@ -48,43 +48,43 @@ export class AuthService {
     // Follow the four scenarios that could happen below.
     if (!this.IsAuthenticated()) {
       // No Token exists - Not Authenticated
-      if (!isRedirectFromLandmarkADFS) {
-        // #1 No token exists in local storage and we've just logged on. Redirect user to Auth0/Landmark-ADFS logon.
-        this.logonToADFS();
+      if (!isRedirectFromADFS) {
+        // #1 No token exists in local storage and we've just logged on. Redirect user to Auth0/ADFS logon.
+        this.logonViaADFS();
       } else {
-        // #2 No token exists in local storage but we've been redirected from Auth0/Landmark-ADFS. Take payload info and log onto Hagrid API.
-        localStorage.setItem('id_token', landmarkPayload.idToken);
-        this.logonToHagrid(landmarkPayload.idTokenPayload.email, true, landmarkPayload.state);
+        // #2 No token exists in local storage but we've been redirected from Auth0/ADFS. Take payload info and log onto Hagrid API.
+        localStorage.setItem('id_token', payload.idToken);
+        this.logonViaApi(payload.idTokenPayload.email, payload.state);
       }
     } else {
       // Token Exists - Authenticated
       if (this.currentUser.User && this.currentUser.User.Email) {
         // #3 Token AND Profile exist in local storage. Log user onto Hagrid API.
-        this.logonToHagrid(this.currentUser.User.Email, false);
+        this.logonViaApi(this.currentUser.User.Email);
       } else {
         // #4 Token but NO Profile exist in local storage. Restart logon process, cannot log user on without email address.
         localStorage.removeItem('id_token');
         localStorage.removeItem('profile');
-        this.logonToADFS();
+        this.logonViaADFS();
       }
     }
     // Check if something went wrong during login call
-    if (landmarkPayload && landmarkPayload.error) {
-      throw landmarkPayload.error;
+    if (payload && payload.error) {
+      throw payload.error;
     }
   }
 
-  private logonToADFS(): void {
-    // This redirects user to Auth0/LMK-ADFS logon. Which following successful logon will redirect to the user back here.
+  private logonViaADFS(): void {
+    // This redirects user to Auth0/ADFS logon. Which following successful logon will redirect to the user back here.
     this.auth0.login({
       sso: false,
-      connection: "Landmark-ADFS",
+      connection: "your-connection-here",
       scope: 'email openid name picture',
       state: window.location.pathname
     });
   }
 
-  private logonToHagrid(email, showWelcomeMessage, redirectUrl?: string): void {
+  private logonViaApi(email, redirectUrl?: string): void {
     // Log user onto Hagrid API and retrieve user details
     this.redirectUrl = redirectUrl;
     this.getLogonUserFromDb(email).subscribe(x => {
